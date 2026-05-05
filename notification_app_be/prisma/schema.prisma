@@ -1,0 +1,59 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NotificationType {
+  Placement
+  Event
+  Result
+}
+
+model Student {
+  id                   String                @id @default(uuid())
+  name                 String
+  email                String                @unique
+  rollNo               String                @unique @map("roll_no")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  studentNotifications StudentNotification[]
+
+  @@map("students")
+}
+
+model Notification {
+  id                   String                @id @default(uuid())
+  type                 NotificationType
+  message              String
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  studentNotifications StudentNotification[]
+
+  @@index([type])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model StudentNotification {
+  id             String       @id @default(uuid())
+  studentId      String       @map("student_id")
+  notificationId String       @map("notification_id")
+  isRead         Boolean      @default(false) @map("is_read")
+  readAt         DateTime?    @map("read_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, notificationId])
+  @@index([studentId])
+  @@index([studentId, isRead])
+  @@index([studentId, createdAt(sort: Desc)])
+  @@map("student_notifications")
+}
